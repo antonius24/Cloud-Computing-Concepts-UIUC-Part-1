@@ -43,6 +43,12 @@ typedef struct MessageHdr {
 	enum MsgTypes msgType;
 }MessageHdr;
 
+typedef struct MessageBody {
+  int id;
+  short port;
+  long heartbeat;
+} MessageBody;
+
 /**
  * CLASS NAME: MP1Node
  *
@@ -75,6 +81,7 @@ public:
 	Address getJoinAddress();
 	void initMemberListTable(Member *memberNode);
 	void printAddress(Address *addr);
+	void sendMessage(Address *dstAddr, MsgTypes msType);
 	virtual ~MP1Node();
 };
 

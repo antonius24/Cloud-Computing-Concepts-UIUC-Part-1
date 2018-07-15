@@ -129,29 +129,16 @@ int MP1Node::introduceSelfToGroup(Address *joinaddr) {
         log->LOG(&memberNode->addr, "Starting up group...");
 #endif
         memberNode->inGroup = true;
-    }
-    else {
-        size_t msgsize = sizeof(MessageHdr) + sizeof(joinaddr->addr) + sizeof(long) + 1;
-        msg = (MessageHdr *) malloc(msgsize * sizeof(char));
-
-        // create JOINREQ message: format of data is {struct Address myaddr}
-        msg->msgType = JOINREQ;
-        memcpy((char *)(msg+1), &memberNode->addr.addr, sizeof(memberNode->addr.addr));
-        memcpy((char *)(msg+1) + 1 + sizeof(memberNode->addr.addr), &memberNode->heartbeat, sizeof(long));
+    } else {
+    	sendMessage(joinaddr, JOINREQ);
 
 #ifdef DEBUGLOG
         sprintf(s, "Trying to join...");
         log->LOG(&memberNode->addr, s);
 #endif
-
-        // send JOINREQ message to introducer member
-        emulNet->ENsend(&memberNode->addr, joinaddr, (char *)msg, msgsize);
-
-        free(msg);
     }
 
     return 1;
-
 }
 
 /**
@@ -163,6 +150,7 @@ int MP1Node::finishUpThisNode(){
    /*
     * Your code goes here
     */
+    return 0;
 }
 
 /**
@@ -218,6 +206,23 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
 	/*
 	 * Your code goes here
 	 */
+	#ifdef DEBUGLOG
+    	static char s[1024];
+	#endif
+	/*
+	 * Message format
+	 * |  enum MsgTypes msgType  |   id    |   port  | heartbeat |
+	 * |      1 byte             | 4 bytes | 2 bytes |  4 bytes  | 
+	 * |<---- MessageHdr ------->|<--------- MessageBody ------->|
+	 */
+    	MessageHdr *receivedMsg = (MessageHdr *)data;
+    	MessageBody *msgBody = (MessageBody *)data+1;
+        Address *dstAddr = (Address *)msgBody;
+
+    if (receivedMsg->msgType == JOINREQ) {
+        sendMessage(dstAddr, JOINREP);
+    }
+    return true;
 }
 
 /**
@@ -278,4 +283,36 @@ void MP1Node::printAddress(Address *addr)
 {
     printf("%d.%d.%d.%d:%d \n",  addr->addr[0],addr->addr[1],addr->addr[2],
                                                        addr->addr[3], *(short*)&addr->addr[4]) ;    
+}
+
+/**
+ * FUNCTION NAME: sendMessage
+ *
+ * DESCRIPTION: Send coresponding message through net
+ */
+void MP1Node::sendMessage(Address *dstAddr, MsgTypes msType)
+{
+	MessageHdr *msg;
+	MessageBody *body;
+	#ifdef DEBUGLOG
+    	static char s[1024];
+	#endif
+
+    size_t msgsize = sizeof(MessageHdr) + sizeof(MessageBody);
+    msg = (MessageHdr *) malloc(msgsize * sizeof(char));
+	msg->msgType = msType;
+	body = (MessageBody *)(msg+1);
+	body->id = *(int *)(&memberNode->addr.addr);
+	body->port = *(short *)(&memberNode->addr.addr[4]);
+	body->heartbeat = memberNode->heartbeat;
+
+	#ifdef DEBUGLOG
+        sprintf(s, "Return JOINREP message...");
+        log->LOG(&memberNode->addr, s);
+	#endif
+
+    // send JOINREQ message to introducer member
+    emulNet->ENsend(&memberNode->addr, dstAddr, (char *)msg, msgsize);
+
+    free(msg);
 }
