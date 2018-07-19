@@ -191,10 +191,6 @@ void MP1Node::checkMessages() {
 	#endif
     // Pop waiting messages from memberNode's mp1q
     while ( !memberNode->mp1q.empty() ) {
-  //   	#ifdef DEBUGLOG
-  //   		sprintf(s, "mp1q");
-  //   		log->LOG(&memberNode->addr, s);
-		// #endif	
     	ptr = memberNode->mp1q.front().elt;
     	size = memberNode->mp1q.front().size;
     	memberNode->mp1q.pop();
@@ -228,11 +224,11 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
    	memset(&dstAddr, 0, sizeof(Address));
     *(int *)(&dstAddr.addr) = msgBody->id;
     *(short *)(&dstAddr.addr[4]) = msgBody->port;
-	#ifdef DEBUGLOG
-    	sprintf(s, "recvCallBack: messageCount: %d,  %s. msgbody->id: %d, msgbody->port: %d", receivedMsg->messageCount, printAddress(&dstAddr).c_str(), msgBody->id, msgBody->port);
-    	log->LOG(&memberNode->addr, s);
-	#endif		
-    
+	// #ifdef DEBUGLOG
+ //    	sprintf(s, "recvCallBack: messageCount: %d,  %s. msgbody->id: %d, msgbody->port: %d", receivedMsg->messageCount, printAddress(&dstAddr).c_str(), msgBody->id, msgBody->port);
+ //    	log->LOG(&memberNode->addr, s);
+	// #endif		
+
     /*
      * Add or update node in the member list
      */
@@ -276,10 +272,10 @@ void MP1Node::nodeLoopOps() {
     	memset(&dstAddr, 0, sizeof(Address));
     	*(int *)(&dstAddr.addr) = memberNode->memberList[i].getid();
     	*(short *)(&dstAddr.addr[4]) = memberNode->memberList[i].getport();
-		#ifdef DEBUGLOG
-        	sprintf(s, "Sending HEARTBEAT to entry %s", printAddress(&dstAddr).c_str());
-        	log->LOG(&memberNode->addr, s);
-		#endif
+		// #ifdef DEBUGLOG
+  //       	sprintf(s, "Sending HEARTBEAT to entry %s", printAddress(&dstAddr).c_str());
+  //       	log->LOG(&memberNode->addr, s);
+		// #endif
     	sendMessage(&dstAddr, HEARTBEAT);
 	}
 
@@ -288,10 +284,10 @@ void MP1Node::nodeLoopOps() {
 	 */
     for (vector<MemberListEntry>::iterator entry = memberNode->memberList.begin(); entry != memberNode->memberList.end(); ) {
         if (par->getcurrtime() - entry->gettimestamp() > memberNode->timeOutCounter) {
-			#ifdef DEBUGLOG
-        		sprintf(s, "entry %d needs to be deleted.", entry->getid());
-        		log->LOG(&memberNode->addr, s);
-			#endif
+			// #ifdef DEBUGLOG
+   //      		sprintf(s, "entry %d needs to be deleted.", entry->getid());
+   //      		log->LOG(&memberNode->addr, s);
+			// #endif
         	memset(&dstAddr, 0, sizeof(Address));
     		*(int *)(&dstAddr.addr) = entry->id;
     		*(short *)(&dstAddr.addr[4]) = entry->port;
@@ -303,10 +299,10 @@ void MP1Node::nodeLoopOps() {
 		}
 	}
 
-	#ifdef DEBUGLOG
-        sprintf(s, "%s", printMemberList().c_str());
-        log->LOG(&memberNode->addr, s);
-	#endif
+	// #ifdef DEBUGLOG
+ //        sprintf(s, "%s", printMemberList().c_str());
+ //        log->LOG(&memberNode->addr, s);
+	// #endif
 
     return;
 }
@@ -412,38 +408,30 @@ void MP1Node::sendMessage(Address *dstAddr, MsgTypes msType)
 	body->port = *(short *)(&memberNode->addr.addr[4]);
 	body->heartbeat = memberNode->heartbeat;
 	if (msType == JOINREQ) {
-		#ifdef DEBUGLOG
-        	sprintf(s, "Sending JOINREQ message... id: %d, port: %d, heartbeat: %ld to %s", body->id, body->port, body->heartbeat, printAddress(dstAddr).c_str());
-        	log->LOG(&memberNode->addr, s);
-		#endif
+		// #ifdef DEBUGLOG
+  //       	sprintf(s, "Sending JOINREQ message... id: %d, port: %d, heartbeat: %ld to %s", body->id, body->port, body->heartbeat, printAddress(dstAddr).c_str());
+  //       	log->LOG(&memberNode->addr, s);
+		// #endif
 	} else {
-		#ifdef DEBUGLOG
-			if (msType == JOINREP) {
-        		sprintf(s, "Sending JOINREP message...");
-        		log->LOG(&memberNode->addr, s);
-        		sprintf(s, "size of memberlist: %ld\n", memberNode->memberList.size());
-        		log->LOG(&memberNode->addr, s);
-        	}
-        #endif
+		// #ifdef DEBUGLOG
+		// 	if (msType == JOINREP) {
+  //       		sprintf(s, "Sending JOINREP message...");
+  //       		log->LOG(&memberNode->addr, s);
+  //       		sprintf(s, "size of memberlist: %ld\n", memberNode->memberList.size());
+  //       		log->LOG(&memberNode->addr, s);
+  //       	}
+  //       #endif
         for (MemberListEntry& entry : memberNode->memberList) {
         	body++;
         	if (par->getcurrtime() - entry.gettimestamp() <= memberNode->pingCounter) {
-				// #ifdef DEBUGLOG
-				// 	Address dst2Addr;
-    //     			memset(&dst2Addr, 0, sizeof(Address));
-    // 				*(int *)(&dst2Addr.addr) = entry.getid();
-    // 				*(short *)(&dst2Addr.addr[4]) = entry.getport();
-    //     			sprintf(s, "HEARTBEAT/JOINREP: %s", printAddress(&dst2Addr).c_str());
-    //     			log->LOG(&memberNode->addr, s);
-				// #endif
         		body->id = entry.getid();
         		body->port = entry.getport();
         		body->heartbeat = entry.getheartbeat();
         	} else {
-				#ifdef DEBUGLOG
-        			sprintf(s, "entry %d is expired.", entry.getid());
-        			log->LOG(&memberNode->addr, s);
-				#endif
+				// #ifdef DEBUGLOG
+    //     			sprintf(s, "entry %d is expired.", entry.getid());
+    //     			log->LOG(&memberNode->addr, s);
+				// #endif
         		body->id = *(int *)(&memberNode->addr.addr);
 				body->port = *(short *)(&memberNode->addr.addr[4]);
 				body->heartbeat = memberNode->heartbeat;
